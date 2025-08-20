@@ -1,4 +1,4 @@
-%% PARAMETERS 
+%%  ------------------------------------------  PARAMETERS 
 
 AFP=0.2;% parameter of the alpha function (for g1)
 GainFB=0.25 ; % parameter for the gain of the feedback
@@ -38,7 +38,7 @@ end
 
 
 
-%% FIGURE 2A
+%% ------------------------------------------  FIGURE 2A
 % In this figure, we take a simple response (yy) and add to it the effect
 % of delay yy_DL, then integration time constant (yy_DL_TC) and then
 % nonlinearity (yy_DL_TC_NL)
@@ -122,9 +122,8 @@ grid; Figure_appearance
 xlim([0 3])
 ylim([0 20])
 
-footer(['NL =' num2str(NL) ' | DEL12 =' num2str(del(1,2)) ' | TC1 =' num2str(a1(1))])
 
-%% FIG 2B
+%%  ------------------------------------------  FIG 2B
 % figure illustrating the case of horizontal propagation within one area
 
 delH=0.01; % delay from each node sample along the horizontal network
@@ -183,35 +182,38 @@ end
 ylim([0 90])
 grid; Figure_appearance
 
-footer(['NL =' num2str(NL) ' | GainFB =' num2str(GainFB) ' | DEL =' num2str(delH) ' | TC1 =' num2str(a1(1))])
 
 
+%%  ------------------------------------------  INTER-CORTICAL SIMULATION OF EVOKED RESPONSE (ER) 
+% ER IS CALCULATED AS SUM OF POSTSYNAPTIC INTEGRATION (PSI) FROM Feedforward (FF) AND Feedback (FB)
 
-%% INTER-CORTICAL SIMULATION OF EVOKED RESPONSE (ER) AS SUM OF POSTSYNAPTIC INTEGRATION (PSI) FROM Feedforward (FF) & Feedback (FB)
+clear ER tab PSI
 
-clear ER % ER(i,j,:) is Evoked Response in time for hierarchical level i, and cycle step k
+
+% ER(i,j,:) is Evoked Response in time for hierarchical level i, and cycle step j
 
 ER(1,1,:)=CortConv( g1  ,squeeze(TC(1,:)),0,x,NL);      % CortConv is a function for the cortical integration (see below)
                                                         % the first step is thus to integrate an alpha function (g1) 
-ER(2,1,:)=x.*0;
+ER(2,1,:)=x.*0;  % ER for downstream areas is set to 0 when no activity yet reached this level
 ER(3,1,:)=x.*0;
 ER(4,2,:)=x.*0;
 ER(5,3,:)=x.*0;
 ER(6,4,:)=x.*0;
 
-clear tab PSI
-% tab is attributing, for each time step, the corresponding hierarchical level (tab(z,1)) and the cycle step (tab(z,2))
+% tab is defining, for each time step z, the corresponding hierarchical level (tab(z,1)) and the cycle step (tab(z,2))
 tab=[2 2;  1 3; 3 3; 2 4; 4 4;  1 5 ;3 5  ;5 5;  2 6 ; 4 6 ; 1 7 ; 3 7 ; 5 7; 2 8 ; 4 8 ; 1 9 ; 3 9 ; 5 9 ; 4 10 ]; % receiving layer / time step
-
 
 for z=1:size(tab,1) % times steps
     j=tab(z,1); k=tab(z,2);
-    if j>1, 
-        PSI(j-1,j,k,:)=CortConv( squeeze(ER(j-1,k-1,:))  ,squeeze(TC(j,:)), del(j-1,j),x,NL);    % PostSynaptic Integration (PSI) of layer j (Time constant j) of FF input (coming from layer j-1)  , step k
-        PSI(j+1,j,k,:)=CortConv( squeeze(ER(j+1,k-1,:))  ,squeeze(TC(j,:)), del(j+1,j),x,NL);    % PostSynaptic Integration (PSI) of layer j (Time constant j) of FB input (coming from layer j+1)  , step k
+    if j>1,
+        % PostSynaptic Integration (PSI) of layer j (Time constant j) of FF input (ER coming from layer j-1)  , step k
+        PSI(j-1,j,k,:)=CortConv( squeeze(ER(j-1,k-1,:))  ,squeeze(TC(j,:)), del(j-1,j),x,NL);
+        % PostSynaptic Integration (PSI) of layer j (Time constant j) of FB input (ER coming from layer j+1)  , step k
+        PSI(j+1,j,k,:)=CortConv( squeeze(ER(j+1,k-1,:))  ,squeeze(TC(j,:)), del(j+1,j),x,NL);
         ER(j,k,:)=squeeze(PSI(j-1,j,k,:))+GainFB.*squeeze(PSI(j+1,j,k,:));
     else
-        PSI(j+1,j,k,:)=CortConv( squeeze(ER(j+1,k-1,:))  ,squeeze(TC(j,:)), del(j+1,j),x,NL);    % PostSynaptic Integration (PSI) of layer j (Time constant j) of FB input (coming from layer j+1)  , step k
+        % PostSynaptic Integration (PSI) of layer j (Time constant j) of FB input (ER coming from layer j+1)  , step k
+        PSI(j+1,j,k,:)=CortConv( squeeze(ER(j+1,k-1,:))  ,squeeze(TC(j,:)), del(j+1,j),x,NL);
         ER(j,k,:)=squeeze(ER(j,k-2,:))+GainFB.*squeeze(PSI(j+1,j,k,:));
     end
 end
@@ -219,7 +221,7 @@ end
 
 
 
-%% SUPPL FIG
+%%  ------------------------------------------  SUPPL FIG
 % Not in the paper, but shows all the cycles (columns)
 % iterations across all hierarchical levels (color-coded, row), 
 % to calculate HWx, estimation of phase in each steps
@@ -269,10 +271,9 @@ for z=1:size(tab,1) % ---------- times steps
     Figure_appearance
 
 end
-footer(['NL =' num2str(NL) ' | GainFB =' num2str(GainFB) ' | DEL12 =' num2str(del(1,2)) ' | DEL21 =' num2str(del(2,1)) ' | TC1 =' num2str(a1(1))])
 
 
-%% FIG 2C
+%%  ------------------------------------------  FIG 2C
 % Figure compiling inter-cortical interactions across hierarchy
 % (color-coded) and cycle steps (rows)
 
